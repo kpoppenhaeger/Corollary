@@ -1,0 +1,3 @@
+# exclude these files from being added into the github repository:
+directories_etc.py
+
