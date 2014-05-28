@@ -1,8 +1,14 @@
 Corollary
 =========
 
-Some analysis scripts for some observations
+Some analysis scripts for some observations.
 
+What you will need:
+- python 2.7.x
+- matplotlib
+- numpy
+- scipy
+- astropy
 
 XMM scripts
 ===========
