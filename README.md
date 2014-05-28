@@ -9,6 +9,7 @@ What you will need:
 - numpy
 - scipy
 - astropy
+- XMM SAS (some reasonably recent version)
 
 XMM scripts
 ===========
