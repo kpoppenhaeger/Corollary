@@ -21,7 +21,7 @@ extracts the data tar file, performs cifbuild, odfingest, em/epproc, and basic e
 
 - EPIC_check.csh
 
-checks for hugh background and makes clean event files (i.e. events with bad flags excluded); applies barycenter correction to event files.
+checks for high background and makes clean event files (i.e. events with bad flags excluded); applies barycenter correction to event files.
 
 - next step: define source and bg regions with ds9. I use 20 arcsec source regions and 60 arcsec bg regions.
 
@@ -31,4 +31,4 @@ extracts pn light curves in a few bands.
 
 - EPIC_extract_regions.csh
 
-extracts source and bg counts from the defined regions, for all 3 EPIC detectors.
+extracts source and bg counts from the defined regions, for all 3 EPIC detectors individually.
