@@ -212,3 +212,80 @@ def make_count_rate_comparison(folders=folders, path=path, instrument='pn', p_st
 
 
 
+
+#######################################
+# calculate normalization factors so that bg-subtracted light curves will have the same out-of-transit level
+#######################################
+
+def calc_norm_factors(folders=folders, instrument='pn', energy_low=200, energy_high=2000):
+  # get number of counts in and out of transit and corresponding phase interval:
+  result = make_count_rate_comparison(folders=folders, energy_low=200, energy_high=2000, instrument=instrument)
+  # calculate bg-subtracted count rate out of transit per full orbit:
+  phaserate_out = (result['counts_out_tr_src'] - result['counts_out_tr_bg']*bgfactor) / result['phase_out_tr']
+  # this shall get normalized to unity.
+  norm_factors = 1./phaserate_out
+  return norm_factors
+
+
+
+def make_total_lc(phase_grid, norm_factors, folders=folders, instrument='pn', energy_low=200, energy_high=2000):
+  # this takes the event files which have the orbital phase listed, for source and bg and each observation. it then counts how many events in source and bg fall into which bin of the orbital phase grid. For the first and last bin in which there's data, there needs to be a correction factor because the observation started or ended somewhere in the middle of that bin.
+  # I therefore have a number of arrays for this:
+  # an array which lists the source counts during each bin for each observations, i.e. an array of dimensions (n_gridborders-1, n_obs).
+  # an array which lists the bg counts during each bin for each observations, i.e. an array of dimensions (n_gridborders-1, n_obs).
+  # an array which lists the "fullness" of each bin. I.e. if the observation did not cover this bin, it is zero, if the observation completely covers this bin, it is one, and for the first an last bin of an observations, it will be something inbetween. This also has dimensions (n_gridborders-1, n_obs).
+  
+  counts_src = np.zeros([len(folders), len(phase_grid) - 1])
+  counts_bg = np.zeros([len(folders), len(phase_grid) - 1])
+  fullness = np.zeros([len(folders), len(phase_grid) - 1])
+  
+  for j in np.arange(0, len(folders)):
+    
+    # read the event files (src and bg) with phase information:
+    hdu = fits.open(path + folders[j] + '/' + 'pn_barycenter_src_phase.fits')
+    src = hdu[1].data
+    hdu.close()
+    hdu = fits.open(path + folders[j] + '/' + 'pn_barycenter_bg_phase.fits')
+    bg = hdu[1].data
+    hdu.close()
+    
+    # now make mask to take only the counts which are within the specified energies:
+    good_src = (src['PI'] >= energy_low) & (src['PI'] <= energy_high)
+    good_bg = (bg['PI'] >= energy_low) & (bg['PI'] <= energy_high)
+    
+    for i in np.arange(0, len(phase_grid) - 1):
+      # how many counts are there in each phase grid bin?
+      counts_src[j, i] = ((src[good_src]['PHASE'] >= phase_grid[i]) & (src[good_src]['PHASE'] < phase_grid[i+1])).sum()
+      counts_bg[j, i] = ((bg[good_bg]['PHASE'] >= phase_grid[i]) & (bg[good_bg]['PHASE'] < phase_grid[i+1])).sum()
+      # fullness: the event list is ordered in phase, so this works:
+      i_start = np.where(phase_grid < src['PHASE'][0])[0][-1]
+      fullness[j, i_start] = (phase_grid[i_start + 1] - src['PHASE'][0])/(phase_grid[i_start + 1] - phase_grid[i_start])
+      i_end = np.where(phase_grid > src['PHASE'][-1])[0][0]
+      fullness[j, i_end-1] = (src['PHASE'][-1] - phase_grid[i_end-1])/(phase_grid[i_end] - phase_grid[i_end-1])
+      fullness[j, i_start+1:i_end-1] = 1.
+  
+  return (counts_src, counts_bg, fullness)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

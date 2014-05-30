@@ -27,7 +27,7 @@ folders_nonflare = np.array([
 '0720174001',
 '0720174101',
 '0720174201',
-'0720174301',
+#'0720174301',
 '0720174401',
 ])
 
@@ -57,7 +57,7 @@ ana.make_new_fits_with_phase(folders=folders, instrument='mos2')
 # calculate the added-up count rate in and out of transit:
 
 #result = make_count_rate_comparison(folders=folders, energy_low=200, energy_high=2000)
-result = ana.make_count_rate_comparison(folders=folders_nonflare, energy_low=200, energy_high=2000)
+result = ana.make_count_rate_comparison(folders=folders_nonflare, energy_low=500, energy_high=5000)
 
 phaserate_out = (result['counts_out_tr_src'].sum() - result['counts_out_tr_bg'].sum()*bgfactor) / result['phase_out_tr'].sum()
 phaserate_in = (result['counts_in_tr_src'].sum() - result['counts_in_tr_bg'].sum()*bgfactor) / result['phase_in_tr'].sum()
@@ -69,13 +69,34 @@ print rate_out, rate_in
 print rate_in/rate_out
 
 
+# calculate normalization factors for each observation to make out-of transit count rate unity:
+# rate * norm_factors = normalized rate
+
+norm_factors = ana.calc_norm_factors(folders=folders, instrument='pn', energy_low=200, energy_high=2000)
 
 
-## get the arrival time of the first photon in each instrument:
-## (may be useful later when combining the MOS/PN signals)
-#(pn_start, pn_end) = ana.get_start_end_times(instrument='pn')
-#(mos1_start, mos1_end) = ana.get_start_end_times(instrument='mos1')
-#(mos2_start, mos2_end) = ana.get_start_end_times(instrument='mos2')
+# now make the co-added light curve.
+
+phase_grid = np.arange(0.70, 1.3, 0.005)
+
+(counts_src, counts_bg, fullness) = ana.make_total_lc(phase_grid, norm_factors, folders=folders_nonflare, instrument='pn', energy_low=200, energy_high=2000)
+
+norms = np.ones([len(folders_nonflare), len(phase_grid) - 1])
+for i in np.arange(0, len(folders_nonflare)):
+  norms[i,:] = norm_factors[i]
+
+y = ((counts_src-bgfactor*counts_bg)*norms).sum(axis=0)/fullness.sum(axis=0)
+x = (phase_grid[0:-1] + phase_grid[1:])/2.
+
+good = fullness.sum(axis=0) > 9.
+
+plt.figrue()
+plt.plot(x[good], y[good])
+
+
+# this still needs error bars etc.
+
+
 
 
 
